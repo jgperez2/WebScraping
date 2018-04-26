@@ -12,11 +12,13 @@ hostUrl = "http://polymerdatabase.com/home.html"
 # links to all polymers found
 polymer_links = []
 
-headings = ["name","formula","Mw","Vdw","MV","D","SP","Ec","Tg","Cp","EMw","IRn"]
+headings = ["NAME","FORMULA","PROPERTY: Molecular Weight of Repeat Unit (g/mol)",
+            "PROPERTY: Van-der-waals Volume (mL/mol)","PROPERTY: Molar Volume (mL/mol)"
+            ,"PROPERTY: Density (g/mL)","PROPERTY: Solubility Parameter (MPa^1/2)",
+            "PROPERTY: Molar Cohesive Energy (J/mol)","PROPERTY: Tg (K)",
+            "PROPERTY: Cp (J/(mol*K))","PROPERTY: Entanglement Molecular Weight (g/mol)",
+            "PROPERTY: Index of Rrefraction (n)"]
 theData = [headings]
-
-# Temporary link to Poly(acrylamide) in order to fix data gathering
-temp2 = "http://polymerdatabase.com/polymers/polyacrylamide.html"
 
 # Creates the tag soup
 def make_soup(url):
@@ -28,7 +30,7 @@ def make_soup(url):
 
 # ___Functions___
 
-#function to find links in table from html page
+# function to find polymer classes from a table
 def in_table_dir(tag):
     try:
         if (tag.contents[0]['href'] == '#' or tag.contents[0]['href'] == '#.html'):
@@ -37,13 +39,16 @@ def in_table_dir(tag):
         return False
     return (tag.parent.name == 'td') and (tag.name == 'p')
 
+# function to find polymers from list
 def in_list(href):
     return href and re.compile("polymers").search(href) and re.compile(".html").search(href) and not re.compile("polymer classes").search(href)
 
+# function to find the name of the polymer
 def data_in_table(tag):
     #return (tag.name == 'tr') and ((tag.contents[0].string == "Molecular Weight of Repeat unit") or (tag.contents[0].string == "Glass Transition Temperature "))
     return (tag.parent.name == 'div') and (tag.name == 'b')
 
+# function to find the chemical structure from a table
 def find_smiles(tag):
     try:
         if (tag.contents[0] == 'SMILES'):
@@ -88,7 +93,6 @@ def branch_from_Directory(page):
             url = root2Url + tag.contents[0]['href']
         url = url.replace(" ", "%20")
         polymers.append(url)
-    #print("___#: %d" % len(polymers))
     i = 0
     for link in polymers:
         if (i >= 0):
@@ -97,8 +101,8 @@ def branch_from_Directory(page):
 
 def branch_from_url(url):
     soup = make_soup(url)
+
     i = 0
-    #print ("______Polymer Type: " + url)
     for tag in soup.find_all(href=in_list):
         if (i >= 0):
             poly = rootUrl + tag['href']
@@ -106,12 +110,8 @@ def branch_from_url(url):
             poly = poly.replace("/../", "/")
             polymer_links.append(poly)
         i += 1
-    #print ("______#: %d" % i)
 
-
-# Josh's Code Try2
-
-# actual table parsing code
+# Table parsing code
 def get_data(url):
     soup = make_soup(url)
     # find all tables in the page
@@ -164,9 +164,7 @@ def get_data(url):
                         pass
                 properties.append(l[0])
             except:
-                # if there's an error thrown catch it and print this, you probably won't need to do this though
-                #print("fail")
-                properties.append("Fail")
+                properties.append(" ")
                 return None
     return properties
 
@@ -176,14 +174,14 @@ def populate_dataSet():
 
     # Create Dataset within a double array in python
     for link in polymer_links:
-        #data = get_data(link)
-        #if (not (data == None)):
-         #   theData.append(data)
+        data = get_data(link)
+        if (not (data == None)):
+            theData.append(data)
         print("Polymer: " + link)
     print("# Polymers: %d" % len(polymer_links))
 
     # Export the dataset into an excel file
-    #write_to_excel(theData)
+    write_to_excel(theData)
 
 def write_to_excel(data):
     # Create a workbook and add a worksheet.
@@ -202,10 +200,6 @@ def write_to_excel(data):
             col += 1
         row += 1
         col = 0
-
-    # Write a total using a formula.
-    #worksheet.write(row, 0, 'Total')
-    #worksheet.write(row, 1, '=SUM(B1:B4)')
 
     workbook.close()
 
